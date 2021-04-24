@@ -15,7 +15,6 @@ public class Main {
     static class Knot implements Comparable<Knot> {
 
         int id;
-        boolean visited = false;
         boolean marked = false;
         double key = Double.POSITIVE_INFINITY;
         Knot pi;
@@ -69,14 +68,6 @@ public class Main {
             this.marked = marked;
         }
 
-        public boolean isVisited() {
-            return visited;
-        }
-
-        public void setVisited(boolean visited) {
-            this.visited = visited;
-        }
-
         @Override
         public int compareTo(Knot k) {
             if (Double.compare(this.key, k.key) == 0) {
@@ -89,71 +80,11 @@ public class Main {
         }
     }
 
-    /*    static class Pqueue{
-            int minKey = 0;
-            int maxKey = 0;
-            ArrayList<Knot> sortArray = new ArrayList<>();
-            public Knot exstractKnot(){
-                sortQueue();
-                Knot minElement = sortArray.get(0);
-                return sortArray.remove(0);
-            }
-
-            public void sortQueue(){
-                boolean notSorted = true;
-                while(notSorted){
-                notSorted = false;
-                for (int i=0 ; i<sortArray.size()-2;i++){
-                    Knot temp1 = sortArray.get(i);
-                    Knot temp2 = sortArray.get(i+1);
-                    if(Double.compare(sortArray.get(i).key , sortArray.get(i+1).key)> 0){
-                        notSorted = true;
-                        sortArray.remove(i);
-                        sortArray.add(i,temp2);
-                        sortArray.remove(i+1);
-                        sortArray.add(i+1,temp1);
-
-                    }
-                }
-                }
-            }
-            public void addKnot(Knot knot){
-                if(knot.getKey()<minKey|| minKey==0){
-                    minKey = (int)knot.getKey();
-                }
-                else if(knot.getKey()>maxKey|| maxKey==0){
-                    maxKey = (int)knot.getKey();
-                }
-                sortArray.add(knot);
-            }
-
-            public int getMinKey() {
-                return minKey;
-            }
-
-            public void setMinKey(int minKey) {
-                this.minKey = minKey;
-            }
-
-            public int getMaxKey() {
-                return maxKey;
-            }
-
-            public void setMaxKey(int maxKey) {
-                this.maxKey = maxKey;
-            }
-
-            public boolean isEmpty(){
-                if(sortArray.isEmpty()){
-                    return true;
-                }
-                else return false;
-            }
-        }*/
     static class Connection {
         Knot head;
         Knot rear;
         int value;
+        boolean visited = false;
 
         public Knot getHead() {
             return head;
@@ -178,10 +109,17 @@ public class Main {
         public void setRear(Knot rear) {
             this.rear = rear;
         }
+
+        public boolean isVisited() {
+            return visited;
+        }
+
+        public void setVisited(boolean visited) {
+            this.visited = visited;
+        }
     }
 
     static public int Prim(Knot[] houselist, Knot s) {
-        int result = 0;
 
         PriorityQueue<Knot> pq = new PriorityQueue();
 
@@ -190,61 +128,59 @@ public class Main {
         }
 
         s.setKey(0);
-        Connection minCon = null;
-        ArrayList<Connection> profitCon = new ArrayList<>();
+        s.setPi(s);
         while (!pq.isEmpty()) {
-            if(profitCon.size()!=0){
-                for(Connection connection : profitCon){
-                    result = result + gov_contribution - connection.getValue();
-                }
-                minCon = null;
-                profitCon = new ArrayList<>();
-            }
+
             Knot extractedKnot = pq.remove();
-            Knot newElement = null;
-            boolean allVisited = true;
+            Knot currentKnot;
+            Knot parentKnot;
             for (Connection connection : extractedKnot.getConnections()) {
-                if(!connection.getRear().isMarked() && !connection.getHead().isMarked()){
-                    if(connection.getRear().equals(extractedKnot)){
-                        newElement = connection.getHead();
+                if(!connection.getHead().isMarked() && !connection.getRear().isMarked()) {
+                    if (connection.getHead().equals(extractedKnot)) {
+                        currentKnot = connection.getRear();
+                        parentKnot = connection.getHead();
+                    } else {
+                        currentKnot = connection.getHead();
+                        parentKnot = connection.getRear();
                     }
-                    else{
-                        newElement = connection.getRear();
+
+                    if (currentKnot.getKey() > connection.getValue()) {
+                        currentKnot.setKey(connection.getValue());
+                        currentKnot.setPi(parentKnot);
+                        pq.remove(currentKnot);
+                        pq.add(currentKnot);
                     }
-                    if(!newElement.isVisited()){
-                        allVisited = false;
-                    }
-                if((null == minCon )){
-                    minCon = connection;
-                    newElement.setVisited(true);
-                }
-                else if(connection.getValue()< minCon.getValue()){
-                    profitCon.add(minCon);
-                    minCon = connection;
-                    newElement.setVisited(true);
-                    }
-                if(connection.getValue() < gov_contribution && connection!=minCon){
-                    profitCon.add(connection);
-                    newElement.setVisited(true);
-                }
-                if (newElement.getKey() > connection.getValue()) {
-                    newElement.setKey(connection.getValue());
-                    newElement.setPi(connection.getRear());
-                    pq.remove(newElement);
-                    pq.add(newElement);
-                }
                 }
             }
             extractedKnot.setMarked(true);
-            extractedKnot.setVisited(true);
-            if(null!=minCon && (!allVisited && minCon.getValue()>gov_contribution)){
-                profitCon.add(minCon);
-            }
-            else if(null!=minCon && minCon.getValue()<gov_contribution){
-                profitCon.add(minCon);
-            }
+        }
 
 
+
+
+        //sets visible
+            for (Knot knot : houses){
+                for (Connection conn : knot.getConnections()){
+                    if(knot!=knot.pi &&(knot.pi.equals(conn.getHead()) || knot.pi.equals(conn.getRear()))){
+                        conn.setVisited(true);
+                    }
+                }
+            }
+        return 1;
+    }
+
+    public static int countMoney(){
+        int result = 0;
+        for(Knot knot : houses){
+            for(Connection conn : knot.getConnections()){
+                if(conn.isVisited() && conn.getRear().equals(knot)){
+                    result = result + gov_contribution - conn.getValue();
+                }
+                else if(!conn.isVisited()&& conn.getRear().equals(knot) && conn.getValue()<gov_contribution){
+                    conn.setVisited(true);
+                    result = result + gov_contribution -conn.getValue();
+                }
+            }
         }
         return result;
     }
@@ -296,7 +232,8 @@ public class Main {
                 }
             }
         }
-        int result = Prim(houses, houses[0]);
+        Prim(houses, houses[0]);
+        int result = countMoney();
         //System.out.println(result);
         if(result>0){
             System.out.println("YES");
